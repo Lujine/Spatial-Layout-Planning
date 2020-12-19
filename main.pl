@@ -114,7 +114,7 @@ uses the helper calc_util which calculates the area of a list of rectangles
 **********************************************************************/
 apts_util([], 0).
 apts_util([AH | AT], ApartmentsArea):-
-	check_util(AH, A1),
+	calc_util(AH, A1),
 	apts_util(AT, A2),
 	ApartmentsArea #= A1 + A2.
 	

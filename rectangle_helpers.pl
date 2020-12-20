@@ -48,7 +48,10 @@ adjacent(r(X1, W1, Y1, H1), r(X2, W2, Y2, H2), Adj):- % <==== added "Adj" to hav
 	LefRig in 0\/2,
 	
 	Side #= OnTop + OnBot + OnLef + OnRig, 
-	Side #= 1 #<==> Adj.
+	Side #= 1,
+	
+	(TopBot#=2 #\/ LefRig#=2) #<==> Adj. 
+
 	
 /****************************checkAdjacency*********************************
 makes sure rect i is adjacent to rect i+1
@@ -62,6 +65,6 @@ checkAdjacency([H1,H2|T]):-
 
 
 % Test cases for adjacent
-%R1 = r(0,  5, 0,  5), R2 = r(5,  5, 0,  5), R3 = r(10, 5, 0,  5), R4 = r(0,  5, 5,  5), R5 = r(5,  5, 5,  5), R6 = r(10, 5, 5,  5), R7 = r(0,  5, 10, 5), R8 = r(5,  5, 10, 5), R9 = r(10, 5, 10, 5), adjacent(R8,R9).
-%R1 = r(0,  10, 0,  5), R2 = r(0,  6, 5,  17), R3 = r(6, 4, 5, 2), R4 = r(6, 4, 7, 15), adjacent(R1,R2).
-%R1 = r(0, 5, 0, 15), R2 = r(5, 5, 0, 5), R3 = r(5, 5, 5, 5), R4 = r(5, 5, 10, 5), adjacent(R1,R2).
+%R1 = r(0,  5, 0,  5), R2 = r(5,  5, 0,  5), R3 = r(10, 5, 0,  5), R4 = r(0,  5, 5,  5), R5 = r(5,  5, 5,  5), R6 = r(10, 5, 5,  5), R7 = r(0,  5, 10, 5), R8 = r(5,  5, 10, 5), R9 = r(10, 5, 10, 5), adjacent(R8,R9,Adj).
+%R1 = r(0,  10, 0,  5), R2 = r(0,  6, 5,  17), R3 = r(6, 4, 5, 2), R4 = r(6, 4, 7, 15), adjacent(R1,R2,Adj).
+%R1 = r(0, 5, 0, 15), R2 = r(5, 5, 0, 5), R3 = r(5, 5, 5, 5), R4 = r(5, 5, 10, 5), adjacent(R1,R2,Adj).

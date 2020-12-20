@@ -45,7 +45,9 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 	append(AptCoordList, Coords),
 	
 	createHallways(FloorWidth, FloorHeight, TotalNumApts, NumHallways, Hallways, HallCoordList),
-	
+	checkAdjacency(Hallways),
+
+
 	append(Apartments, Rooms),
 	append(Rooms, Hallways, Floor),
 	disjoint2(Floor),
@@ -126,4 +128,4 @@ calc_util([H | T], Area):-
 	Area #= A1 + A2.
 	
 
-	
+

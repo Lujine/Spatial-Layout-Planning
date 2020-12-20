@@ -19,7 +19,7 @@ create_rect_min_area(FloorWidth, FloorHeight, MinRoomSize, Rect, Coord):-
 	Width * Height #>= MinRoomSize,
 	create_rect(FloorWidth, FloorHeight, Rect, Coord).
 	
-adjacent(r(X1, W1, Y1, H1), r(X2, W2, Y2, H2)):-
+adjacent(r(X1, W1, Y1, H1), r(X2, W2, Y2, H2), Adj):- % <==== added "Adj" to have a refiable expression
 	
 	R1TopY #= Y1,
 	R1LefX #= X1,
@@ -48,7 +48,7 @@ adjacent(r(X1, W1, Y1, H1), r(X2, W2, Y2, H2)):-
 	LefRig in 0\/2,
 	
 	Side #= OnTop + OnBot + OnLef + OnRig, 
-	Side #= 1.
+	Side #= 1 #<==> Adj.
 	
 /****************************checkAdjacency*********************************
 makes sure rect i is adjacent to rect i+1
@@ -56,7 +56,8 @@ makes sure rect i is adjacent to rect i+1
 checkAdjacency([]).
 checkAdjacency([_]).
 checkAdjacency([H1,H2|T]):-
-    adjacent(H1,H2),
+	adjacent(H1,H2,Adj),
+	Adj#=1,
     checkAdjacency([H2|T]).
 
 

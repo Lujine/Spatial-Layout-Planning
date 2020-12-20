@@ -47,6 +47,7 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 	createHallways(FloorWidth, FloorHeight, TotalNumApts, NumHallways, Hallways, HallCoordList),
 	checkAdjacency(Hallways),
 
+	checkConnectivity(Apartments,Hallways),
 
 	append(Apartments, Rooms),
 	append(Rooms, Hallways, Floor),
@@ -127,5 +128,37 @@ calc_util([H | T], Area):-
 	calc_util(T, A2),
 	Area #= A1 + A2.
 	
+
+/****************************checkConnectivity*********************************
+makes sure all apartments are connected through hallways
+takes in list of apartments, and list of hallways
+***********************************************************************/
+checkConnectivity([],_).
+checkConnectivity([AptH|AptT],Hallways):-
+	checkConnectivityHelper(AptH,Hallways,ConnectedRooms),
+	ConnectedRooms#>=1,
+	checkConnectivity(AptT,Hallways).
+/****************************checkConnectivityHelper*********************************
+counts the number of rooms inside an apartments are connected to hallways
+takes in list of rooms, and list of hallways, returns a counter
+***********************************************************************/
+checkConnectivityHelper([],_,0).
+checkConnectivityHelper([RoomH|RoomT],Hallways,Count):-
+	checkConnectivityHelper2(RoomH,Hallways,Count1),
+	checkConnectivityHelper(RoomT,Hallways,Count2),
+	Count #= Count1+Count2.
+
+
+/****************************checkConnectivityHelper2*********************************
+counts the number of hallways 1 room is connected to
+takes in a rooms, and a list of hallways, returns a counter
+***********************************************************************/
+checkConnectivityHelper2(_,[],0).
+checkConnectivityHelper2(Room,[HallH|HallT],Count):-
+	adjacent(Room,HallH,Adj),
+	checkConnectivityHelper2(Room,HallT,Count2),
+	Count #= Count2+Adj.
+
+
 
 

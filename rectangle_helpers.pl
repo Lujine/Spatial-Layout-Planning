@@ -48,9 +48,9 @@ adjacent(r(X1, W1, Y1, H1), r(X2, W2, Y2, H2), Adj):- % <==== added "Adj" to hav
 	LefRig in 0\/2,
 	
 	Side #= OnTop + OnBot + OnLef + OnRig, 
-	Side #= 1,
+	%Side #= 1,
 	
-	(TopBot#=2 #\/ LefRig#=2) #<==> Adj. 
+	((TopBot #= 2 #\/ LefRig #= 2) #/\ Side #= 1) #<==> Adj. 
 
 	
 /****************************checkAdjacency*********************************

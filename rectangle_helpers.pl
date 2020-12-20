@@ -20,12 +20,11 @@ create_rect_min_area(FloorWidth, FloorHeight, MinRoomSize, Rect, Coord):-
 	create_rect(FloorWidth, FloorHeight, Rect, Coord).
 	
 adjacent(r(X1, W1, Y1, H1), r(X2, W2, Y2, H2), Adj):- % <==== added "Adj" to have a refiable expression
-	
 	R1TopY #= Y1,
 	R1LefX #= X1,
 	R1BotY #= Y1 + H1,
 	R1RigX #= X1 + W1,
-	
+
 	R2TopY #= Y2,
 	R2LefX #= X2,
 	R2BotY #= Y2 + H2,
@@ -37,7 +36,7 @@ adjacent(r(X1, W1, Y1, H1), r(X2, W2, Y2, H2), Adj):- % <==== added "Adj" to hav
 	((OnTop #\/ OnBot) #/\ ((R2RigX #>= R1LefX #/\ R2RigX #=< R1RigX) #\/ (R2LefX #>= R1LefX #/\ R2LefX #=< R1RigX))) #<==> VertMidX, 
 	
 	TopBot #= OnTop + OnBot + VertMidX,
-	TopBot in 0\/2,
+	TopBot in 0..2,
 
 	%r2 is to the left or right of 
 	R1LefX #= R2RigX #<==> OnLef,
@@ -45,7 +44,7 @@ adjacent(r(X1, W1, Y1, H1), r(X2, W2, Y2, H2), Adj):- % <==== added "Adj" to hav
 	((OnLef #\/ OnRig) #/\ ((R2TopY #>= R1TopY #/\ R2TopY #=< R1BotY) #\/ (R2BotY #>= R1TopY #/\ R2BotY #=< R1BotY))) #<==> VertMidY,
 	
 	LefRig #= OnLef + OnRig + VertMidY,
-	LefRig in 0\/2,
+	LefRig in 0..2,
 	
 	Side #= OnTop + OnBot + OnLef + OnRig, 
 	%Side #= 1,

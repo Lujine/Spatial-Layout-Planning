@@ -43,11 +43,15 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 	maplist(createApts(FloorWidth, FloorHeight), AptTypes, NumApts, ApartmentsList, AptCoordList),
 	append(ApartmentsList, Apartments),
 	append(AptCoordList, Coords),
-	
-	createHallways(FloorWidth, FloorHeight, TotalNumApts, NumHallways, Hallways, HallCoordList),
+	% NumHallways#=TotalNumApts,
+	MinLengthHall #= FloorHeight div TotalNumApts,
+	MinWidthHall #= FloorWidth div TotalNumApts,
+	createHallways(FloorWidth, FloorHeight, TotalNumApts,MinLengthHall ,MinWidthHall,NumHallways, Hallways, HallCoordList),
 	checkAdjacency(Hallways),
 
-	checkConnectivity(Apartments,Hallways),
+	checkConnectivity(Apartments,Hallways,NumConnected),
+	
+	NumConnected#=TotalNumApts,
 
 	append(Apartments, Rooms),
 	append(Rooms, Hallways, Floor),
@@ -100,15 +104,18 @@ createRoom(FloorWidth, FloorHeight, MinRoomSize, Room, Coord):-
 /**************************createHallways*******************************
 creates a variable number of hallways using the helper createHallwaysHelper
 **********************************************************************/
-createHallways(FloorWidth, FloorHeight, TotalNumApts, NumHallways, Hallways, CoordList):-
+createHallways(FloorWidth, FloorHeight, TotalNumApts,MinLengthHall ,MinWidthHall,NumHallways, Hallways, CoordList):-
 	length(Hallways, NumHallways),
 	NumHallways in 1..200,
-	createHallwaysHelper(FloorWidth, FloorHeight, TotalNumApts, Hallways, CoordList).
+	createHallwaysHelper(FloorWidth, FloorHeight, TotalNumApts,MinLengthHall ,MinWidthHall, Hallways, CoordList).
 	
-createHallwaysHelper(_, _, _, [], []).
-createHallwaysHelper(FloorWidth, FloorHeight, TotalNumApts, [HallH | HallT], Coord):-
+createHallwaysHelper(_, _, _, _, _, [], []).
+createHallwaysHelper(FloorWidth, FloorHeight, TotalNumApts,MinLengthHall ,MinWidthHall, [HallH | HallT], Coord):-
 	create_rect(FloorWidth, FloorHeight, HallH, CoordH),
-	createHallwaysHelper(FloorWidth, FloorHeight, TotalNumApts, HallT, CoordT),
+	HallH= r(_,W,_,H),
+	H#>MinLengthHall, %TODO figure out
+	W#>MinWidthHall,
+	createHallwaysHelper(FloorWidth, FloorHeight, TotalNumApts, MinLengthHall ,MinWidthHall,HallT, CoordT),
 	append(CoordH ,CoordT, Coord).
 	
 /***************************apts_util*********************************
@@ -133,30 +140,32 @@ calc_util([H | T], Area):-
 makes sure all apartments are connected through hallways
 takes in list of apartments, and list of hallways
 ***********************************************************************/
-checkConnectivity([],_).
-checkConnectivity([AptH|AptT],Hallways):-
-	checkConnectivityHelper(AptH,Hallways,ConnectedRooms),
-	ConnectedRooms#>=1,
-	checkConnectivity(AptT,Hallways).
-/****************************checkConnectivityHelper*********************************
-counts the number of rooms inside an apartments are connected to hallways
+checkConnectivity([],_,0).
+checkConnectivity([AptH|AptT],Hallways,B):-
+	appartmentToHallwayConnectivity(AptH,Hallways,ConnectedRooms),
+	ConnectedRooms#>=1 #<==> B1,
+	checkConnectivity(AptT,Hallways,B2),
+	B #=B1+B2.
+
+/****************************appartmentToHallwayConnectivity*********************************
+counts the number of rooms inside an apartment that are connected to hallways
 takes in list of rooms, and list of hallways, returns a counter
 ***********************************************************************/
-checkConnectivityHelper([],_,0).
-checkConnectivityHelper([RoomH|RoomT],Hallways,Count):-
-	checkConnectivityHelper2(RoomH,Hallways,Count1),
-	checkConnectivityHelper(RoomT,Hallways,Count2),
+appartmentToHallwayConnectivity([],_,0).
+appartmentToHallwayConnectivity([RoomH|RoomT],Hallways,Count):-
+	roomToHallwayConnectivity(RoomH,Hallways,Count1),
+	appartmentToHallwayConnectivity(RoomT,Hallways,Count2),
 	Count #= Count1+Count2.
 
 
-/****************************checkConnectivityHelper2*********************************
+/****************************roomToHallwayConnectivity*********************************
 counts the number of hallways 1 room is connected to
 takes in a rooms, and a list of hallways, returns a counter
 ***********************************************************************/
-checkConnectivityHelper2(_,[],0).
-checkConnectivityHelper2(Room,[HallH|HallT],Count):-
+roomToHallwayConnectivity(_,[],0).
+roomToHallwayConnectivity(Room,[HallH|HallT],Count):-
 	adjacent(Room,HallH,Adj),
-	checkConnectivityHelper2(Room,HallT,Count2),
+	roomToHallwayConnectivity(Room,HallT,Count2),
 	Count #= Count2+Adj.
 
 

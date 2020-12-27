@@ -16,6 +16,17 @@ Apartment Type:
 Specific retangles:
 	apt(UpperLeftCornerX, Width, UpperLeftCornerY, Height)
 	hall(UpperLeftCornerX, Width, UpperLeftCornerY, Height)
+
+Room types:
+0 Bedroom
+1 Kitchen
+2 Dining Room
+3 Master bathroom
+4 Minor bathroom
+5 Living Room
+6 Hallway
+7 Dressing room
+8 Sun room
 **********************************************************************
 **********************************************************************/
 	
@@ -89,7 +100,7 @@ createAptRooms(FloorWidth, FloorHeight, AptType, [RoomH | RoomT], Coords):-
 	AptType = apt_type(NumRooms, [TypeH | TypeT], [MinSizeH | MinSizeT], _, _),
 	NumRooms #> 0,
 	
-	createRoom(FloorWidth, FloorHeight, MinSizeH, RoomH, CoorH),
+	createRoom(FloorWidth, FloorHeight, TypeH, MinSizeH, RoomH, CoorH),
 	NumRoomsRem #= NumRooms - 1 ,
 	AptTypeRem = apt_type(NumRoomsRem, TypeT, MinSizeT, _, _),
 	createAptRooms(FloorWidth, FloorHeight, AptTypeRem, RoomT, CoorT),
@@ -98,8 +109,13 @@ createAptRooms(FloorWidth, FloorHeight, AptType, [RoomH | RoomT], Coords):-
 /****************************createRoom*********************************
 creates a single room
 **********************************************************************/
-createRoom(FloorWidth, FloorHeight, MinRoomSize, Room, Coord):-
-	create_rect_min_area(FloorWidth, FloorHeight, MinRoomSize, Room, Coord).
+createRoom(FloorWidth, FloorHeight, Type, MinRoomSize, Room, Coord):-
+	create_rect_min_area(FloorWidth, FloorHeight, MinRoomSize, Room, Coord),
+	
+	(Type #= 8) #<==> ShouldBeSunRoom,
+
+	sun_room(FloorWidth, FloorHeight, Coord, IsSunRoom),
+	ShouldBeSunRoom #==> IsSunRoom.
 
 /**************************createHallways*******************************
 creates a variable number of hallways using the helper createHallwaysHelper
@@ -170,4 +186,10 @@ roomToHallwayConnectivity(Room,[HallH|HallT],Count):-
 
 
 
-
+sun_room(FloorWidth, FloorHeight, Coord, IsSunRoom):-
+	Coord = [X, W, Y, H],
+	X #= 0 #<==> IsAtLeft,
+	Y #= 0 #<==> IsAtTop,
+	X + W #= FloorWidth #<==> IsAtRight,
+	Y + H #= FloorHeight #<==> IsAtBottom,
+	(IsAtLeft #\/ IsAtTop #\/ IsAtRight #\/ IsAtBottom) #<==> IsSunRoom.

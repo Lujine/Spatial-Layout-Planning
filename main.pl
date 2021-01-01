@@ -87,6 +87,11 @@ createApts(FloorWidth, FloorHeight, AptType, NumApts, [AptH | AptT], Coords):-
 	createAptRooms(FloorWidth, FloorHeight, AptType, AptH, CoorH),
 	append(CoorH, CoorT, Coords),
 
+	% Dressing room adj to bedroom
+	% Minor bathroom adjacent to room
+	% dining adjacent to kitchen
+	% adjacentRooms(AptH, AptT),
+
 	Counter #= NumApts - 1,
 	createApts(FloorWidth, FloorHeight, AptType, Counter, AptT, CoorT).
 
@@ -193,3 +198,29 @@ sun_room(FloorWidth, FloorHeight, Coord, IsSunRoom):-
 	X + W #= FloorWidth #<==> IsAtRight,
 	Y + H #= FloorHeight #<==> IsAtBottom,
 	(IsAtLeft #\/ IsAtTop #\/ IsAtRight #\/ IsAtBottom) #<==> IsSunRoom.
+
+	/* 
+		Send AptH + AptType to predicate 
+		6 (dressing) adj to next which must be 0 (bedroom)
+		4 (minor bath) adj to next, unless at end of list
+		2 (dining) adj to next, which must be 1 kitchen
+	*/
+adjacentRooms([_], [_]).
+adjacentRooms([RoomH1 | RoomT], [TypeH | TypeT]):-
+	
+	RoomT = [RoomH2 | _],
+	TypeT = [TypeH2 | _],
+	adjacent(RoomH1, RoomH2, Adj),
+
+	TypeH #= 6 #<==> IsDressing,
+	IsDressing #==> Adj,
+	IsDressing #==> TypeH2 #= 0,
+
+	TypeH #= 4 #<==> IsMinorBath,
+	IsMinorBath #==> Adj,
+
+	TypeH #= 2 #<==> IsDining,
+	IsDining #==> TypeH2 #= 1,
+	IsDining #==> Adj,
+
+	adjacentRooms([RoomT], [TypeT]).

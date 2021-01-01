@@ -52,7 +52,8 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 	sum(NumApts, #=, TotalNumApts),
 	
 	% Apartment and External Hallways Layout Constraints
-	maplist(createApts(FloorWidth, FloorHeight), AptTypes, NumApts, ApartmentsList, AptCoordList),
+	maplist(createApts(FloorWidth, FloorHeight), AptTypes, NumApts, ApartmentsList, AptCoordList, XsList, WsList, YsList, HsList),
+	
 	append(ApartmentsList, Apartments),
 	append(AptCoordList, Coords),
 	% NumHallways#=TotalNumApts,
@@ -64,6 +65,15 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 	checkConnectivity(Apartments,Hallways,NumConnected),
 	
 	NumConnected#=TotalNumApts,
+	
+	append(XsList, Xs),
+	append(WsList, Ws),
+	append(YsList, Ys),
+	append(HsList, Hs),
+	
+	append(Xs, Ws, HorizCoord),
+	append(Xs, Ws, VertCoord),
+	append(HorizCoord, VertCoord, CoordsOrg),
 
 	append(Apartments, Rooms),
 	append(Rooms, Hallways, Floor),
@@ -81,11 +91,11 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 creates all apartments of some type "AptType"
 this apartment type exists "NumApts" times on the floor
 ***********************************************************************/
-createApts(_, _, _, 0, [], []).	
-createApts(FloorWidth, FloorHeight, AptType, NumApts, [AptH | AptT], Coords):-
+createApts(_, _, _, 0, [], [], [], [], [], []).	
+createApts(FloorWidth, FloorHeight, AptType, NumApts, [AptH | AptT], Coords, Xs, Ws, Ys, Hs):-
 	NumApts #> 0,
 
-	createAptRooms(FloorWidth, FloorHeight, AptType, AptH, CoorH),
+	createAptRooms(FloorWidth, FloorHeight, AptType, AptH, CoorH, XsH, WsH, YsH, HsH),
 	append(CoorH, CoorT, Coords),
 
 	% Dressing room adj to bedroom
@@ -97,33 +107,39 @@ createApts(FloorWidth, FloorHeight, AptType, NumApts, [AptH | AptT], Coords):-
 
 
 	Counter #= NumApts - 1,
-	createApts(FloorWidth, FloorHeight, AptType, Counter, AptT, CoorT).
+	createApts(FloorWidth, FloorHeight, AptType, Counter, AptT, CoorT, XsT, WsT, YsT, HsT),
+	append(XsH, XsT, Xs),
+	append(WsH, WsT, Ws),
+	append(YsH, YsT, Ys),
+	append(HsH, HsT, Hs).
+
 
 /**************************createAptRooms*******************************
 creates the rooms in an apartment
 ***********************************************************************/
-createAptRooms(_, _, apt_type(0, _, _, _, _), [], []).
-createAptRooms(FloorWidth, FloorHeight, AptType, [RoomH | RoomT], Coords):-
+createAptRooms(_, _, apt_type(0, _, _, _, _), [], [], [], [], [], []).
+createAptRooms(FloorWidth, FloorHeight, AptType, [RoomH | RoomT], Coords, [X | XT], [W | WT], [Y | YT], [H | HT]):-
 
 	%AptType = apt_type(NumRooms, RoomTypes, MinRoomSize, Widths, Heights),
 	AptType = apt_type(NumRooms, [TypeH | TypeT], [MinSizeH | MinSizeT], _, _),
 	NumRooms #> 0,
 	
-	createRoom(FloorWidth, FloorHeight, TypeH, MinSizeH, RoomH, CoorH),
-	NumRoomsRem #= NumRooms - 1 ,
+	createRoom(FloorWidth, FloorHeight, TypeH, MinSizeH, RoomH, CoorH, X, W, Y, H),
+	NumRoomsRem #= NumRooms - 1,
 	AptTypeRem = apt_type(NumRoomsRem, TypeT, MinSizeT, _, _),
-	createAptRooms(FloorWidth, FloorHeight, AptTypeRem, RoomT, CoorT),
+	createAptRooms(FloorWidth, FloorHeight, AptTypeRem, RoomT, CoorT, XT, WT, YT, HT),
 	append(CoorH, CoorT, Coords).
 
 /****************************createRoom*********************************
 creates a single room
 **********************************************************************/
-createRoom(FloorWidth, FloorHeight, Type, MinRoomSize, Room, Coord):-
+createRoom(FloorWidth, FloorHeight, Type, MinRoomSize, Room, Coord, X, W, Y, H):-
 	create_rect_min_area(FloorWidth, FloorHeight, MinRoomSize, Room, Coord),
 	
 	% sun room exposed to day light
 	(Type #= 7) #<==> ShouldBeSunRoom,
 	sun_room(FloorWidth, FloorHeight, Coord, IsSunRoom),
+	Coord = [X, W, Y, H],
 	ShouldBeSunRoom #==> IsSunRoom.
 
 /**************************createHallways*******************************

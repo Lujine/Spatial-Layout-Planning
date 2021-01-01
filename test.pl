@@ -1,4 +1,11 @@
 :-include('main.pl').
 
 test(Apartments, Hallways):-
-	 input(10, 10, _, _, [apt_type(2, [room1, room2], [5,5], _, _)], [3], Apartments, Hallways).
+	Width = 38,
+	Height = 38,
+
+	% Apt type 1
+	NumRooms = 8,
+	RoomTypes = [0, 4, 0, 2, 1, 3, 5, 8],
+	RoomSizes = [5,5,5,5,5,5,5,5],
+	input(Width, Height, _, _, [apt_type(NumRooms, RoomTypes, RoomSizes, _, _)], [2], Apartments, Hallways).

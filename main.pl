@@ -24,9 +24,10 @@ Room types:
 3 Master bathroom
 4 Minor bathroom
 5 Living Room
-6 Hallway
-7 Dressing room
-8 Sun room
+6 Dressing room
+7 Sun room
+
+8 Hallway
 **********************************************************************
 **********************************************************************/
 	
@@ -117,8 +118,8 @@ creates a single room
 createRoom(FloorWidth, FloorHeight, Type, MinRoomSize, Room, Coord):-
 	create_rect_min_area(FloorWidth, FloorHeight, MinRoomSize, Room, Coord),
 	
-	(Type #= 8) #<==> ShouldBeSunRoom,
-
+	% sun room exposed to day light
+	(Type #= 7) #<==> ShouldBeSunRoom,
 	sun_room(FloorWidth, FloorHeight, Coord, IsSunRoom),
 	ShouldBeSunRoom #==> IsSunRoom.
 

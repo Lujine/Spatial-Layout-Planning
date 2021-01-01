@@ -91,7 +91,10 @@ createApts(FloorWidth, FloorHeight, AptType, NumApts, [AptH | AptT], Coords):-
 	% Dressing room adj to bedroom
 	% Minor bathroom adjacent to room
 	% dining adjacent to kitchen
-	% adjacentRooms(AptH, AptT),
+	% print(AptH),nl,nl,
+	AptType = apt_type(_, Types, _, _, _),
+	adjacentRooms(AptH, Types),
+
 
 	Counter #= NumApts - 1,
 	createApts(FloorWidth, FloorHeight, AptType, Counter, AptT, CoorT).
@@ -211,6 +214,11 @@ adjacentRooms([RoomH1 | RoomT], [TypeH | TypeT]):-
 	
 	RoomT = [RoomH2 | _],
 	TypeT = [TypeH2 | _],
+
+	% print(RoomH1), print(" of type "), print(TypeH), nl,
+	% print(RoomH2),  print(" of type "), print(TypeH2), nl,
+	% print("Are adj? "), print(Adj), nl,
+
 	adjacent(RoomH1, RoomH2, Adj),
 
 	TypeH #= 6 #<==> IsDressing,
@@ -224,4 +232,4 @@ adjacentRooms([RoomH1 | RoomT], [TypeH | TypeT]):-
 	IsDining #==> TypeH2 #= 1,
 	IsDining #==> Adj,
 
-	adjacentRooms([RoomT], [TypeT]).
+	adjacentRooms(RoomT, TypeT).

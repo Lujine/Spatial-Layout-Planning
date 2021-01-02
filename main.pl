@@ -1,6 +1,7 @@
 :-use_module(library(clpfd)).
 :-include('rectangle_helpers.pl').
 :-include('apartments.pl').
+:-include('global.pl').
 
 /**********************************************************************
 *******************************Structs*********************************
@@ -33,7 +34,7 @@ Room types:
 **********************************************************************
 **********************************************************************/
 	
-input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, Types, OuterHallways):-
+input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, Types, OuterHallways,Elevator,[GlobalLandscapeViewConstraint,GlobalElevatorDistanceConstraint,GlobalGoldenRatio]):-
 	statistics(walltime, [_ | [_]]),
 
 	% Domains
@@ -69,20 +70,40 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 	% append(HorizCoord, VertCoord, CoordsOrg),
 
 	addOuterHalls(FloorWidth, FloorHeight, TotalNumApts, OuterHallways, NumHallways, OuterHallwaysCoords),
+	create_rect(FloorWidth, FloorHeight, Elevator, ElevatorCoord),
+
+	% append([Elevator],OuterHallways,ElevatorAndHallways),
+	% \+disjoint2(ElevatorAndHallways),
+
 	% checkConnectivity(InnerHallways, OuterHallways),
 	% checkAdjacency(OuterHallways),
+
+	globalLandscapeView(Apartments,Landscapes,FloorWidth,FloorHeight,GlobalLandscape),
+	GlobalLandscape#= TotalNumApts #<==> GlobalLandscapeViewConstraint,
+
+	globalElevatorDistance(Apartments,Elevator,DistancesToElevator),
+	allDistancesEqual(DistancesToElevator,NumEqualDistance),
+	NumEqualDistance#=TotalNumApts #<==> GlobalElevatorDistanceConstraint,
+
+	globalgoldenRatio(Apartments,NumApartmentGoldenRatio),
+	NumApartmentGoldenRatio#=TotalNumApts #<==> GlobalGoldenRatio,
+
 
 	% no overlap constraint
 	append(Apartments, Rooms),
 	append(Rooms, OuterHallways, Floor),
 	disjoint2(Floor),
+	append(Rooms,[Elevator],RoomsAndElevator),
+	disjoint2(RoomsAndElevator),
 
 	% Utility of Apartments and Hallways
 	apts_util(Apartments, ApartmentsArea),
 	calc_util(OuterHallways, HallsArea),
 	TotalArea #= ApartmentsArea + HallsArea,
 
-	append(Coords, OuterHallwaysCoords, Label),
+	append(OuterHallwaysCoords,ElevatorCoord,OuterHallsAndElevatorCoords),
+	append(Coords, OuterHallsAndElevatorCoords, Label),
+	% append(Coords, OuterHallwaysCoords, Label),
 	labeling([], Label),
 
 

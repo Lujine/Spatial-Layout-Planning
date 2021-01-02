@@ -86,7 +86,12 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 	NumEqualDistance#=TotalNumApts #<==> GlobalElevatorDistanceConstraint,
 
 	globalgoldenRatio(Apartments,NumApartmentGoldenRatio),
-	NumApartmentGoldenRatio#=TotalNumApts #<==> GlobalGoldenRatio,
+	NumApartmentGoldenRatio#=TotalNumApts #<==> ApartmentGoldenRatio,
+	goldenRatio(OuterHallways,NumHallwaysGoldenRatio),
+	NumHallwaysGoldenRatio#=NumHallways #<==> HallwaysGoldenRatio,
+	
+	ApartmentGoldenRatio+HallwaysGoldenRatio#=2 #<==>GlobalGoldenRatio,
+
 
 
 	% no overlap constraint

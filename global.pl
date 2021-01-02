@@ -80,7 +80,15 @@ counts the number of rooms within an apartment that have the golden ratio
 goldenRatio([],0).
 goldenRatio([RectH|RectT],GlobalGolden):-
     RectH = r(_,W,_,H),
-    ((W+H div W) #= (W div H)) #<==> GoldenRect,
+    
+    W#>=H #<==> Bigger #=W,
+    W#>=H #<==> Smaller #=H,
+    
+    W#<H #<==> Bigger #=H,
+    W#<H #<==> Smaller #=W,
+    
+    
+    ((Bigger+Smaller div Bigger) #= (Bigger div Smaller)) #<==> GoldenRect,
     goldenRatio(RectT,GoldenRest),
     GlobalGolden #= GoldenRect + GoldenRest.
 

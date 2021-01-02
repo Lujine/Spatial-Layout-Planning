@@ -51,7 +51,7 @@ Counts the number of Apartments with equal distances to the elevators
 allDistancesEqual([],0).
 allDistancesEqual([_],1).
 allDistancesEqual([Dh1,Dh2|Dt],GlobalElevatorDistanceConstraint):-
-    Dh1#=Dh2 #<==> HeadFlag,
+    abs(Dh1-Dh2) #=<2 #<==> HeadFlag,
     allDistancesEqual([Dh2|Dt],RestFlag),
     GlobalElevatorDistanceConstraint#= HeadFlag+RestFlag.
 
@@ -87,7 +87,11 @@ goldenRatio([RectH|RectT],GlobalGolden):-
     W#<H #<==> Bigger #=H,
     W#<H #<==> Smaller #=W,
     
-    abs( (Bigger+Smaller div Bigger) - (Bigger div Smaller) )#<4 #<==> GoldenRect,
+    Ratio1 #= (Bigger+Smaller) div Bigger,
+    Ratio2 #= Bigger div Smaller,
+    
+    abs( Ratio1 - Ratio2 )#=<5 #<==> GoldenRect,
+    
     goldenRatio(RectT,GoldenRest),
     GlobalGolden #= GoldenRect + GoldenRest.
 

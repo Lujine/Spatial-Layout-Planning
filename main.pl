@@ -1,5 +1,6 @@
 :-use_module(library(clpfd)).
 :-include('rectangle_helpers.pl').
+:-include('apartments.pl').
 
 /**********************************************************************
 *******************************Structs*********************************
@@ -28,20 +29,13 @@ Room types:
 7 Sun room
 
 8 Hallway
+9 duct
 **********************************************************************
 **********************************************************************/
 	
-input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, Hallways):-
-	% Test Cases
-	/*
-	FloorWidth = 10, 
-	FloorHeight = 10,
-	AptTypes = [
-				apt_type(_,_,[24], _,_),
-				apt_type(_,_,[24], _,_)
-	],
-	NumApts = [2, 2],
-	*/
+input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, Types, OuterHallways):-
+	statistics(walltime, [_ | [_]]),
+
 	% Domains
 	FloorWidth in 10..500,
 	FloorHeight in 10..500,
@@ -52,71 +46,91 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 	sum(NumApts, #=, TotalNumApts),
 	
 	% Apartment and External Hallways Layout Constraints
-	maplist(createApts(FloorWidth, FloorHeight), AptTypes, NumApts, ApartmentsList, AptCoordList, XsList, WsList, YsList, HsList),
-	
+	maplist(createApts(FloorWidth, FloorHeight), 
+		AptTypes, NumApts, 
+		ApartmentsList, Types,
+		AptCoordList, XsList, WsList, YsList, HsList,
+		InnerHallwaysList, NumInnerHallways
+		),
+
+	append(InnerHallwaysList, InnerHallways),
+	% print(InnerHallways),nl,
+
 	append(ApartmentsList, Apartments),
 	append(AptCoordList, Coords),
-	% NumHallways#=TotalNumApts,
-	MinLengthHall #= FloorHeight div TotalNumApts,
-	MinWidthHall #= FloorWidth div TotalNumApts,
-	createHallways(FloorWidth, FloorHeight, TotalNumApts,MinLengthHall ,MinWidthHall,NumHallways, Hallways, HallCoordList),
-	checkAdjacency(Hallways),
 
-	checkConnectivity(Apartments,Hallways,NumConnected),
-	
-	NumConnected#=TotalNumApts,
-	
-	append(XsList, Xs),
-	append(WsList, Ws),
-	append(YsList, Ys),
-	append(HsList, Hs),
-	
-	append(Xs, Ws, HorizCoord),
-	append(Xs, Ws, VertCoord),
-	append(HorizCoord, VertCoord, CoordsOrg),
+	% append(XsList, Xs),
+	% append(WsList, Ws),
+	% append(YsList, Ys),
+	% append(HsList, Hs),
 
+	% append(Xs, Ws, HorizCoord),
+	% append(Ys, Hs, VertCoord),
+	% append(HorizCoord, VertCoord, CoordsOrg),
+
+	addOuterHalls(FloorWidth, FloorHeight, TotalNumApts, OuterHallways, NumHallways, OuterHallwaysCoords),
+	% checkConnectivity(InnerHallways, OuterHallways),
+	% checkAdjacency(OuterHallways),
+
+	% no overlap constraint
 	append(Apartments, Rooms),
-	append(Rooms, Hallways, Floor),
+	append(Rooms, OuterHallways, Floor),
 	disjoint2(Floor),
 
 	% Utility of Apartments and Hallways
 	apts_util(Apartments, ApartmentsArea),
-	calc_util(Hallways, HallsArea),
+	calc_util(OuterHallways, HallsArea),
 	TotalArea #= ApartmentsArea + HallsArea,
+
+	append(Coords, OuterHallwaysCoords, Label),
+	labeling([], Label),
+
+
+	statistics(walltime, [_ | [ExecutionTime]]),
+	T is ExecutionTime / 60000,
+	print("Execution took:"), print(T), print("seconds"), nl.
 	
-	append([NumHallways| HallCoordList], Coords, Label),
-	labeling([], Label).
-	
-/****************************createApts*********************************
-creates all apartments of some type "AptType"
-this apartment type exists "NumApts" times on the floor
+/*********************************************************************
+Appartment Creation 
 ***********************************************************************/
-createApts(_, _, _, 0, [], [], [], [], [], []).	
-createApts(FloorWidth, FloorHeight, AptType, NumApts, [AptH | AptT], Coords, Xs, Ws, Ys, Hs):-
+% creates all apartments of some type "AptType"
+% this apartment type exists "NumApts" times on the floor
+createApts(_, _, _, 0, [], [], [], [], [], [], [], [], []).	
+createApts(FloorWidth, FloorHeight, AptType, NumApts, 
+			[AptH | AptT], [TypesAptH | TypesAptT],
+			Coords, Xs, Ws, Ys, Hs, 
+			[HallwaysH | HallwaysT], [NumHallwaysH | NumHallwaysT]
+			):-
+
 	NumApts #> 0,
 
-	createAptRooms(FloorWidth, FloorHeight, AptType, AptH, CoorH, XsH, WsH, YsH, HsH),
-	append(CoorH, CoorT, Coords),
+	createAptRooms(FloorWidth, FloorHeight, AptType, AptRoomsH, CoorH, XsH, WsH, YsH, HsH),
+	
+	% Dressing room adj to bedroom + Minor bathroom adjacent to room + dining adjacent to kitchen
+	AptType = apt_type(NumRooms, Types, _, _, _),
+	adjacentRooms(AptRoomsH, Types),
 
-	% Dressing room adj to bedroom
-	% Minor bathroom adjacent to room
-	% dining adjacent to kitchen
-	% print(AptH),nl,nl,
-	AptType = apt_type(_, Types, _, _, _),
-	adjacentRooms(AptH, Types),
-
-
+	% add hallways
+	addHalls(FloorWidth, FloorHeight, AptRoomsH, NumRooms, HallwaysH, TypesHallH, NumHallwaysH, HallCoordH),
+	append(Types, TypesHallH, TypesAptH),
+	append(CoorH, HallCoordH, AptCoords),
+	append(AptRoomsH, HallwaysH, AptH),
+	% add ducts
+	% add_ducts(AptRoomsH, Types, Ducts);
+	
 	Counter #= NumApts - 1,
-	createApts(FloorWidth, FloorHeight, AptType, Counter, AptT, CoorT, XsT, WsT, YsT, HsT),
+	createApts(FloorWidth, FloorHeight, AptType, Counter, AptT, TypesAptT, CoorT, XsT, WsT, YsT, HsT, HallwaysT, NumHallwaysT),
+	append(AptCoords, CoorT, Coords),
+	% append(HallwaysH, HallwaysT, Hallways),
+	% print("Apt num: "), print(NumApts), print(" Coords: "), print(Coords), nl,
+
 	append(XsH, XsT, Xs),
 	append(WsH, WsT, Ws),
 	append(YsH, YsT, Ys),
 	append(HsH, HsT, Hs).
 
 
-/**************************createAptRooms*******************************
-creates the rooms in an apartment
-***********************************************************************/
+% creates the rooms in an apartment
 createAptRooms(_, _, apt_type(0, _, _, _, _), [], [], [], [], [], []).
 createAptRooms(FloorWidth, FloorHeight, AptType, [RoomH | RoomT], Coords, [X | XT], [W | WT], [Y | YT], [H | HT]):-
 
@@ -130,9 +144,8 @@ createAptRooms(FloorWidth, FloorHeight, AptType, [RoomH | RoomT], Coords, [X | X
 	createAptRooms(FloorWidth, FloorHeight, AptTypeRem, RoomT, CoorT, XT, WT, YT, HT),
 	append(CoorH, CoorT, Coords).
 
-/****************************createRoom*********************************
-creates a single room
-**********************************************************************/
+
+% creates a single room
 createRoom(FloorWidth, FloorHeight, Type, MinRoomSize, Room, Coord, X, W, Y, H):-
 	create_rect_min_area(FloorWidth, FloorHeight, MinRoomSize, Room, Coord),
 	
@@ -142,23 +155,50 @@ createRoom(FloorWidth, FloorHeight, Type, MinRoomSize, Room, Coord, X, W, Y, H):
 	Coord = [X, W, Y, H],
 	ShouldBeSunRoom #==> IsSunRoom.
 
-/**************************createHallways*******************************
-creates a variable number of hallways using the helper createHallwaysHelper
-**********************************************************************/
-createHallways(FloorWidth, FloorHeight, TotalNumApts,MinLengthHall ,MinWidthHall,NumHallways, Hallways, CoordList):-
+/**********************************************************************
+ * Hallway Creation
+ **********************************************************************/
+
+% creates a variable number of hallways using the helper createOuterHalls	
+addOuterHalls(FloorWidth, FloorHeight, NumApts, Hallways, NumHallways, Coords):-
 	length(Hallways, NumHallways),
-	NumHallways in 1..200,
-	createHallwaysHelper(FloorWidth, FloorHeight, TotalNumApts,MinLengthHall ,MinWidthHall, Hallways, CoordList).
-	
-createHallwaysHelper(_, _, _, _, _, [], []).
-createHallwaysHelper(FloorWidth, FloorHeight, TotalNumApts,MinLengthHall ,MinWidthHall, [HallH | HallT], Coord):-
+	Max #= (NumApts div 2),
+	NumHallways in 1..Max,
+	createOuterHalls(FloorWidth, FloorHeight, Hallways, Coords).
+
+createOuterHalls(_, _, [], []).
+createOuterHalls(FloorWidth, FloorHeight, [HallH | HallT], Coords):-
 	create_rect(FloorWidth, FloorHeight, HallH, CoordH),
-	HallH= r(_,W,_,H),
-	H#>MinLengthHall, %TODO figure out
-	W#>MinWidthHall,
-	createHallwaysHelper(FloorWidth, FloorHeight, TotalNumApts, MinLengthHall ,MinWidthHall,HallT, CoordT),
-	append(CoordH ,CoordT, Coord).
-	
+	createOuterHalls(FloorWidth, FloorHeight, HallT, CoordT),
+	append(CoordH, CoordT, Coords).
+
+% makes sure all apartments are connected through hallways
+% takes in list of apartments, and list of hallways
+checkConnectivity([], _).
+checkConnectivity([AptH | AptT], Hallways):-
+	% print("Apartments as Hallways"), print([AptH | AptT]),
+	appartmentToHallwayConnectivity(AptH, Hallways, ConnectedRooms),
+	ConnectedRooms #>=1,
+	checkConnectivity(AptT, Hallways).
+
+% counts the number of rooms inside an apartment that are connected to hallways
+% takes in list of rooms, and list of hallways, returns a counter
+appartmentToHallwayConnectivity([], _, 0).
+appartmentToHallwayConnectivity([RoomH | RoomT], Hallways, Count):-
+	% print("Hallways 1 apt"), print([RoomH | RoomT]), nl,
+	roomToHallwayConnectivity(RoomH, Hallways, Count1),
+	appartmentToHallwayConnectivity(RoomT, Hallways, Count2),
+	Count #= Count1 + Count2.
+
+% counts the number of hallways 1 room is connected to
+% takes in a rooms, and a list of hallways, returns a counter 
+roomToHallwayConnectivity(_, [], 0).
+roomToHallwayConnectivity(Room, [HallH | HallT], Count):-
+	% print("Hall"), print(Room), nl,
+	adjacent(Room, HallH, Count1),
+	roomToHallwayConnectivity(Room , HallT, Count2),
+	Count #= Count1 + Count2.
+
 /***************************apts_util*********************************
 calculates the area of all appartments to check the utility
 uses the helper calc_util which calculates the area of a list of rectangles
@@ -175,77 +215,3 @@ calc_util([H | T], Area):-
 	A1 #= Width * Height,
 	calc_util(T, A2),
 	Area #= A1 + A2.
-	
-
-/****************************checkConnectivity*********************************
-makes sure all apartments are connected through hallways
-takes in list of apartments, and list of hallways
-***********************************************************************/
-checkConnectivity([],_,0).
-checkConnectivity([AptH|AptT],Hallways,B):-
-	appartmentToHallwayConnectivity(AptH,Hallways,ConnectedRooms),
-	ConnectedRooms#>=1 #<==> B1,
-	checkConnectivity(AptT,Hallways,B2),
-	B #=B1+B2.
-
-/****************************appartmentToHallwayConnectivity*********************************
-counts the number of rooms inside an apartment that are connected to hallways
-takes in list of rooms, and list of hallways, returns a counter
-***********************************************************************/
-appartmentToHallwayConnectivity([],_,0).
-appartmentToHallwayConnectivity([RoomH|RoomT],Hallways,Count):-
-	roomToHallwayConnectivity(RoomH,Hallways,Count1),
-	appartmentToHallwayConnectivity(RoomT,Hallways,Count2),
-	Count #= Count1+Count2.
-
-
-/****************************roomToHallwayConnectivity*********************************
-counts the number of hallways 1 room is connected to
-takes in a rooms, and a list of hallways, returns a counter
-***********************************************************************/
-roomToHallwayConnectivity(_,[],0).
-roomToHallwayConnectivity(Room,[HallH|HallT],Count):-
-	adjacent(Room,HallH,Adj),
-	roomToHallwayConnectivity(Room,HallT,Count2),
-	Count #= Count2+Adj.
-
-
-
-sun_room(FloorWidth, FloorHeight, Coord, IsSunRoom):-
-	Coord = [X, W, Y, H],
-	X #= 0 #<==> IsAtLeft,
-	Y #= 0 #<==> IsAtTop,
-	X + W #= FloorWidth #<==> IsAtRight,
-	Y + H #= FloorHeight #<==> IsAtBottom,
-	(IsAtLeft #\/ IsAtTop #\/ IsAtRight #\/ IsAtBottom) #<==> IsSunRoom.
-
-	/* 
-		Send AptH + AptType to predicate 
-		6 (dressing) adj to next which must be 0 (bedroom)
-		4 (minor bath) adj to next, unless at end of list
-		2 (dining) adj to next, which must be 1 kitchen
-	*/
-adjacentRooms([_], [_]).
-adjacentRooms([RoomH1 | RoomT], [TypeH | TypeT]):-
-	
-	RoomT = [RoomH2 | _],
-	TypeT = [TypeH2 | _],
-
-	% print(RoomH1), print(" of type "), print(TypeH), nl,
-	% print(RoomH2),  print(" of type "), print(TypeH2), nl,
-	% print("Are adj? "), print(Adj), nl,
-
-	adjacent(RoomH1, RoomH2, Adj),
-
-	TypeH #= 6 #<==> IsDressing,
-	IsDressing #==> Adj,
-	IsDressing #==> TypeH2 #= 0,
-
-	TypeH #= 4 #<==> IsMinorBath,
-	IsMinorBath #==> Adj,
-
-	TypeH #= 2 #<==> IsDining,
-	IsDining #==> TypeH2 #= 1,
-	IsDining #==> Adj,
-
-	adjacentRooms(RoomT, TypeT).

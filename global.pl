@@ -13,7 +13,7 @@ globalLandscapeView([AH|AT],Landscapes,FloorWidth,FloorHeight,GlobalLandscape):-
 apartmentLandscapeView([],_,_,_,0).
 apartmentLandscapeView([RH|RT],[Up,Down,Left,Right],FloorWidth,FloorHeight,HasLandscape):-
     RH = r(X, _,Y, _), 
-    ((Up#=1 #/\ Y#=FloorHeight) #\/ (Down#=1 #/\ Y#=0) #\/ (Left#=1 #/\ X#=0) #\/(Right#=1 #/\ X#=FloorWidth) )#<==> Landscape,
+    ((Up#=1 #/\ Y#=0) #\/ (Down#=1 #/\ Y#=FloorHeight) #\/ (Left#=1 #/\ X#=0) #\/(Right#=1 #/\ X#=FloorWidth) )#<==> Landscape,
     apartmentLandscapeView(RT,[Up,Down,Left,Right],FloorWidth,FloorHeight,RestLandscape),
     HasLandscape#=Landscape+RestLandscape.
 
@@ -51,7 +51,7 @@ Counts the number of Apartments with equal distances to the elevators
 allDistancesEqual([],0).
 allDistancesEqual([_],1).
 allDistancesEqual([Dh1,Dh2|Dt],GlobalElevatorDistanceConstraint):-
-    abs(Dh1-Dh2) #=<2 #<==> HeadFlag,
+    abs(Dh1-Dh2) #=<6 #<==> HeadFlag,
     allDistancesEqual([Dh2|Dt],RestFlag),
     GlobalElevatorDistanceConstraint#= HeadFlag+RestFlag.
 

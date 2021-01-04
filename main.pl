@@ -70,6 +70,8 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 
 	% elevator
 	create_elevator(FloorWidth, FloorHeight, OuterHallways, Elevator, ElevatorCoord),
+	% Elevator = r(_,ElevatorWidth,_,ElevatorHeight),
+	% ElevatorWidth#=<FloorWidth div 4, ElevatorHeight#=< FloorHeight div 4,
 
 	% no overlap constraint
 	append(Apartments, Rooms),
@@ -105,8 +107,10 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 	NumApartmentGoldenRatio #= TotalNumApts #<==> ApartmentGoldenRatio,
 	goldenRatio(OuterHallways, NumHallwaysGoldenRatio),
 	NumHallwaysGoldenRatio #= NumHallways #<==> HallwaysGoldenRatio,
+	goldenRatio([Elevator], ElevatorGoldenRatio),
 	
-	ApartmentGoldenRatio+HallwaysGoldenRatio #= 2 #<==> GlobalGoldenRatio,
+	
+	ApartmentGoldenRatio+HallwaysGoldenRatio+ElevatorGoldenRatio #= 3 #<==> GlobalGoldenRatio,
 
 	% Labeling
 	append(Coords, ElevatorCoord, Label),
@@ -120,6 +124,7 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 	print("sun: "), print(CostSunExposed), nl,
 	print("bedrooms: "), print(CostBedrooms), nl,
 	print("bathrooms: "), print(CostBathrooms), nl,
+	print("global landscapes:"), print(GlobalLandscape), nl,
 
 	statistics(walltime, [_ | [ExecutionTime]]),
 	T is ExecutionTime / 60000,
@@ -171,20 +176,21 @@ createAptRooms(_, _, apt_type(0, _, _, _, _), [], []).
 createAptRooms(FloorWidth, FloorHeight, AptType, [RoomH | RoomT], Coords):-
 
 	%AptType = apt_type(NumRooms, RoomTypes, MinRoomSize, Widths, Heights),
-	AptType = apt_type(NumRooms, [TypeH | TypeT], [MinSizeH | MinSizeT], _, _),
+	AptType = apt_type(NumRooms, [TypeH | TypeT], [MinSizeH | MinSizeT], [MinWidthH | MinWidthT], [MinHeightH | MinHeightT]),
 	NumRooms #> 0,
 	
-	createRoom(FloorWidth, FloorHeight, TypeH, MinSizeH, RoomH, CoorH),
+	createRoom(FloorWidth, FloorHeight, TypeH, MinSizeH,MinWidthH,MinHeightH, RoomH, CoorH),
 	NumRoomsRem #= NumRooms - 1,
-	AptTypeRem = apt_type(NumRoomsRem, TypeT, MinSizeT, _, _),
+	AptTypeRem = apt_type(NumRoomsRem, TypeT, MinSizeT, MinWidthT, MinHeightT),
 	createAptRooms(FloorWidth, FloorHeight, AptTypeRem, RoomT, CoorT),
 	append(CoorH, CoorT, Coords).
 
 
 % creates a single room
-createRoom(FloorWidth, FloorHeight, Type, MinRoomSize, Room, Coord):-
+createRoom(FloorWidth, FloorHeight, Type, MinRoomSize,MinWidthH,MinHeightH, Room, Coord):-
 	create_rect_min_area(FloorWidth, FloorHeight, MinRoomSize, Room, Coord),
-	
+	Room = r(_,W,_,H),
+	W #>= MinWidthH, H#>=MinHeightH,
 	% sun room exposed to day light
 	(Type #= 7) #<==> ShouldBeSunRoom,
 	sun_room(FloorWidth, FloorHeight, Coord, IsSunRoom),

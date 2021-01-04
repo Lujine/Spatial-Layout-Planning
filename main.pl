@@ -54,7 +54,7 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 	maplist(createApts(FloorWidth, FloorHeight), 
 		AptTypes, NumApts, 
 		ApartmentsList, TypesList,
-		AptCoordList, XsList, WsList, YsList, HsList,
+		AptCoordList,
 		InnerHallwaysList, NumInnerHallways,
 		OuterHallwaysList
 		),
@@ -130,17 +130,17 @@ Appartment Creation
 ***********************************************************************/
 % creates all apartments of some type "AptType"
 % this apartment type exists "NumApts" times on the floor
-createApts(_, _, _, 0, [], [], [], [], [], [], [], [], [], []).	
+createApts(_, _, _, 0, [], [], [], [], [], []).	
 createApts(FloorWidth, FloorHeight, AptType, NumApts, 
 			[AptH | AptT], [TypesAptH | TypesAptT],
-			Coords, Xs, Ws, Ys, Hs, 
+			Coords, 
 			[InHallwaysH | InHallwaysT], [NumHallwaysH | NumHallwaysT],
 			[OutHallH | OutHallT]
 			):-
 
 	NumApts #> 0,
 
-	createAptRooms(FloorWidth, FloorHeight, AptType, AptRoomsH, CoorH, XsH, WsH, YsH, HsH),
+	createAptRooms(FloorWidth, FloorHeight, AptType, AptRoomsH, CoorH),
 	
 	% Dressing room adj to bedroom + Minor bathroom adjacent to room + dining adjacent to kitchen
 	AptType = apt_type(NumRooms, Types, _, _, _),
@@ -162,40 +162,32 @@ createApts(FloorWidth, FloorHeight, AptType, NumApts,
 
 	
 	Counter #= NumApts - 1,
-	createApts(FloorWidth, FloorHeight, AptType, Counter, AptT, TypesAptT, CoorT, XsT, WsT, YsT, HsT, InHallwaysT, NumHallwaysT, OutHallT),
-	append(AptCoords, CoorT, Coords),
-	% append(HallwaysH, InHallwaysT, Hallways),
-	% print("Apt num: "), print(NumApts), print(" Coords: "), print(Coords), nl,
-
-	append(XsH, XsT, Xs),
-	append(WsH, WsT, Ws),
-	append(YsH, YsT, Ys),
-	append(HsH, HsT, Hs).
+	createApts(FloorWidth, FloorHeight, AptType, Counter, AptT, TypesAptT, CoorT, InHallwaysT, NumHallwaysT, OutHallT),
+	append(AptCoords, CoorT, Coords).
 
 
 % creates the rooms in an apartment
-createAptRooms(_, _, apt_type(0, _, _, _, _), [], [], [], [], [], []).
-createAptRooms(FloorWidth, FloorHeight, AptType, [RoomH | RoomT], Coords, [X | XT], [W | WT], [Y | YT], [H | HT]):-
+createAptRooms(_, _, apt_type(0, _, _, _, _), [], []).
+createAptRooms(FloorWidth, FloorHeight, AptType, [RoomH | RoomT], Coords):-
 
 	%AptType = apt_type(NumRooms, RoomTypes, MinRoomSize, Widths, Heights),
 	AptType = apt_type(NumRooms, [TypeH | TypeT], [MinSizeH | MinSizeT], _, _),
 	NumRooms #> 0,
 	
-	createRoom(FloorWidth, FloorHeight, TypeH, MinSizeH, RoomH, CoorH, X, W, Y, H),
+	createRoom(FloorWidth, FloorHeight, TypeH, MinSizeH, RoomH, CoorH),
 	NumRoomsRem #= NumRooms - 1,
 	AptTypeRem = apt_type(NumRoomsRem, TypeT, MinSizeT, _, _),
-	createAptRooms(FloorWidth, FloorHeight, AptTypeRem, RoomT, CoorT, XT, WT, YT, HT),
+	createAptRooms(FloorWidth, FloorHeight, AptTypeRem, RoomT, CoorT),
 	append(CoorH, CoorT, Coords).
 
 
 % creates a single room
-createRoom(FloorWidth, FloorHeight, Type, MinRoomSize, Room, Coord, X, W, Y, H):-
+createRoom(FloorWidth, FloorHeight, Type, MinRoomSize, Room, Coord):-
 	create_rect_min_area(FloorWidth, FloorHeight, MinRoomSize, Room, Coord),
 	
 	% sun room exposed to day light
 	(Type #= 7) #<==> ShouldBeSunRoom,
 	sun_room(FloorWidth, FloorHeight, Coord, IsSunRoom),
-	Coord = [X, W, Y, H],
 	ShouldBeSunRoom #==> IsSunRoom.
 
 /**********************************************************************

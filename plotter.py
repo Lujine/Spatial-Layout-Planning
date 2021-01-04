@@ -19,7 +19,7 @@ print('consulted!')
 # 7 Sun room
 # 8 Hallway
 # 9 duct
-colorEach = [
+colorEach = [ #colors of each of the rects types
     (255,0,0),
     (0,255,0),
     (255,0,255),
@@ -27,6 +27,7 @@ colorEach = [
     (255,255,0),
     (0,255,255),
     (255,0,255),
+    (100,0,100),
     (0,0,0),
     (40,40,40),
 ]
@@ -78,8 +79,6 @@ for i in range(num_solutions):
         for roomIdx,room in enumerate(apt):
             print(str(room))
             vals = str(room)[2:-1].split(',')
-            # print(vals)
-            # X,Width,Y,Height
             x = int(vals[0])
             w = int(vals[1])
             y = int(vals[2])
@@ -91,8 +90,6 @@ for i in range(num_solutions):
 ductVals = Ducts.value
 for duct in ductVals:
     vals = str(duct)[2:-1].split(',')
-    # print(vals)
-    # X,Width,Y,Height
     x = int(vals[0])
     w = int(vals[1])
     y = int(vals[2])
@@ -102,7 +99,6 @@ for duct in ductVals:
 hallsVals = OuterHallways.value
 for hall in hallsVals:
     vals = str(hall)[2:-1].split(',')
-    
     x = int(vals[0])
     w = int(vals[1])
     y = int(vals[2])

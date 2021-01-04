@@ -44,23 +44,19 @@ calculateApartmentBedroomCost([RoomH1,RoomH2|RoomT],[TypeH1,TypeH2|TypeT],Cost):
 % bathrooms should be accessible from any room *especially* the living room
 main_bathroom([], [], 0).
 main_bathroom([AptH | AptT], [TypesH | TypesT], Cost):-
-    find_room_of_type(AptH, TypesH, 3, Bathrooms),
-    find_rooms_except_type(AptH, TypesH, 3, Rooms),
-    calc_bathrooms_cost(Bathrooms, Rooms, Cost1),
+    calculateApartmentBathroomCost(AptH,TypesH,Cost1),
     main_bathroom(AptT, TypesT, Cost2),
     Cost #= Cost1 + Cost2.
 
-calc_bathrooms_cost([], _, 0).
-calc_bathrooms_cost([BathH | BathT], Rooms, Cost):-
-    calc_single_bath_cost(BathH, Rooms, Cost1),
-    calc_bathrooms_cost(BathT, Rooms, Cost2),
-    Cost #= Cost1 + Cost2.
-
-calc_single_bath_cost(_, [], 0).
-calc_single_bath_cost(Bath, [RoomH | RoomT], Cost):-
-    dist(Bath, RoomH, Cost1),
-    calc_single_bath_cost(Bath, RoomT, Cost2),
-    Cost #= Cost1 + Cost2.
+calculateApartmentBathroomCost([],[],0).
+calculateApartmentBathroomCost([_],[_],0).
+calculateApartmentBathroomCost([RoomH1,RoomH2|RoomT],[TypeH1,TypeH2|TypeT],Cost):-
+    dist(RoomH1, RoomH2, Distance),
+    (TypeH1#=3 #/\ TypeH2#\=3) #\/ (TypeH1#\=3 #/\ TypeH2#=3) #<==> CostH#=Distance,
+    (TypeH1#=3 #/\ TypeH2#=3) #\/ (TypeH1#\=3 #/\ TypeH2#\=3) #<==> CostH#=0,
+    calculateApartmentBathroomCost([RoomH2|RoomT],[TypeH2|TypeT],RestCostH2),
+    calculateApartmentBathroomCost([RoomH1|RoomT],[TypeH1|TypeT],RestCostH1),
+    Cost #= CostH+RestCostH1+RestCostH2.
 
 % helpers
 % gets all rooms of type Type

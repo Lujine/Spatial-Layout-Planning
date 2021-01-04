@@ -1,6 +1,7 @@
 :-use_module(library(clpfd)).
 :-include('rectangle_helpers.pl').
 :-include('apartments.pl').
+:-include('soft.pl').
 :-include('global.pl').
 
 /**********************************************************************
@@ -34,9 +35,12 @@ Room types:
 **********************************************************************
 **********************************************************************/
 	
-input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, Types, OuterHallways,Elevator,[GlobalLandscapeViewConstraint,GlobalElevatorDistanceConstraint,GlobalGoldenRatio]):-
+input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, Types, OuterHallways, Elevator,
+	[GlobalLandscapeViewConstraint, GlobalElevatorDistanceConstraint, GlobalGoldenRatio]):-
+
 	statistics(walltime, [_ | [_]]),
 
+	/****************** Hard Constraints ******************/
 	% Domains
 	FloorWidth in 10..500,
 	FloorHeight in 10..500,
@@ -49,12 +53,13 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 	% Apartment and External Hallways Layout Constraints
 	maplist(createApts(FloorWidth, FloorHeight), 
 		AptTypes, NumApts, 
-		ApartmentsList, Types,
+		ApartmentsList, TypesList,
 		AptCoordList, XsList, WsList, YsList, HsList,
 		InnerHallwaysList, NumInnerHallways
 		),
 
 	append(InnerHallwaysList, InnerHallways),
+	append(TypesList, Types),
 	% print(InnerHallways),nl,
 
 	append(ApartmentsList, Apartments),
@@ -78,45 +83,63 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 	% checkConnectivity(InnerHallways, OuterHallways),
 	% checkAdjacency(OuterHallways),
 
-	globalLandscapeView(Apartments,Landscapes,FloorWidth,FloorHeight,GlobalLandscape),
-	GlobalLandscape#= TotalNumApts #<==> GlobalLandscapeViewConstraint,
-
-	globalElevatorDistance(Apartments,Elevator,DistancesToElevator),
-	allDistancesEqual(DistancesToElevator,NumEqualDistance),
-	NumEqualDistance#=TotalNumApts #<==> GlobalElevatorDistanceConstraint,
-
-	globalgoldenRatio(Apartments,NumApartmentGoldenRatio),
-	NumApartmentGoldenRatio#=TotalNumApts #<==> ApartmentGoldenRatio,
-	goldenRatio(OuterHallways,NumHallwaysGoldenRatio),
-	NumHallwaysGoldenRatio#=NumHallways #<==> HallwaysGoldenRatio,
-	
-	ApartmentGoldenRatio+HallwaysGoldenRatio#=2 #<==>GlobalGoldenRatio,
-
-
-
 	% no overlap constraint
+	% TODO fix this
 	append(Apartments, Rooms),
 	append(Rooms, OuterHallways, Floor),
 	disjoint2(Floor),
 	append(Rooms,[Elevator],RoomsAndElevator),
 	disjoint2(RoomsAndElevator),
-
+	
 	% Utility of Apartments and Hallways
 	apts_util(Apartments, ApartmentsArea),
 	calc_util(OuterHallways, HallsArea),
 	TotalArea #= ApartmentsArea + HallsArea,
 
-	append(OuterHallwaysCoords,ElevatorCoord,OuterHallsAndElevatorCoords),
-	append(Coords, OuterHallsAndElevatorCoords, Label),
-	% append(Coords, OuterHallwaysCoords, Label),
-	labeling([], Label),
+	/****************** Soft Constraints ******************/
+	sun_exposed(FloorWidth, FloorHeight, Apartments, CostSunExposed),
+	bedrooms(Apartments, Types, CostBedrooms),
+	main_bathroom(Apartments, Types, CostBathrooms),
 
+	CostFunction #= CostSunExposed + CostBedrooms + CostBathrooms,
+	
+	/***************** Global Constraints *****************/
+	% Landscape View
+	globalLandscapeView(Apartments, Landscapes, FloorWidth, FloorHeight, GlobalLandscape),
+	GlobalLandscape #= TotalNumApts #<==> GlobalLandscapeViewConstraint,
+
+	% Elevator Distance
+	globalElevatorDistance(Apartments, Elevator, DistancesToElevator),
+	allDistancesEqual(DistancesToElevator, NumEqualDistance),
+	NumEqualDistance #= TotalNumApts #<==> GlobalElevatorDistanceConstraint,
+
+	% Golden Ratio
+	globalgoldenRatio(Apartments, NumApartmentGoldenRatio),
+	NumApartmentGoldenRatio #= TotalNumApts #<==> ApartmentGoldenRatio,
+	goldenRatio(OuterHallways, NumHallwaysGoldenRatio),
+	NumHallwaysGoldenRatio #= NumHallways #<==> HallwaysGoldenRatio,
+	
+	ApartmentGoldenRatio+HallwaysGoldenRatio #= 2 #<==> GlobalGoldenRatio,
+
+	% Labeling
+	append(OuterHallwaysCoords, ElevatorCoord, OuterHallsAndElevatorCoords),
+	append(Coords, OuterHallsAndElevatorCoords, Label),
+	print("sun: "), print(CostSunExposed), nl,
+	print("bedrooms: "), print(CostBedrooms), nl,
+	print("bathrooms: "), print(CostBathrooms), nl,
+	% append(Coords, OuterHallwaysCoords, Label),
+
+	% labeling([min(CostSunExposed)], Label),
+	labeling([], Label),
+	print("sun: "), print(CostSunExposed), nl,
+	print("bedrooms: "), print(CostBedrooms), nl,
+	print("bathrooms: "), print(CostBathrooms), nl,
 
 	statistics(walltime, [_ | [ExecutionTime]]),
 	T is ExecutionTime / 60000,
 	print("Execution took:"), print(T), print("seconds"), nl.
 	
-/*********************************************************************
+/**********************************************************************
 Appartment Creation 
 ***********************************************************************/
 % creates all apartments of some type "AptType"
@@ -225,10 +248,11 @@ roomToHallwayConnectivity(Room, [HallH | HallT], Count):-
 	roomToHallwayConnectivity(Room , HallT, Count2),
 	Count #= Count1 + Count2.
 
-/***************************apts_util*********************************
-calculates the area of all appartments to check the utility
-uses the helper calc_util which calculates the area of a list of rectangles
-**********************************************************************/
+/**********************************************************************
+ * apts_util
+ **********************************************************************/
+% calculates the area of all appartments to check the utility
+% uses the helper calc_util which calculates the area of a list of rectangles
 apts_util([], 0).
 apts_util([AH | AT], ApartmentsArea):-
 	calc_util(AH, A1),

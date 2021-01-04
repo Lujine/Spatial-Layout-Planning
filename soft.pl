@@ -25,17 +25,21 @@ not_exposed_to_light(FloorWidth, FloorHeight, Room, NotSun):-
 % bedrooms should be near each other
 bedrooms([], [], 0).
 bedrooms([AptH | AptT], [TypesH | TypesT], Cost):-
-    find_room_of_type(AptH, TypesH, 0, Bedrooms),
-    calc_bedrooms_cost(Bedrooms, Cost1),
+    calculateApartmentBedroomCost(AptH,TypesH,Cost1),
     bedrooms(AptT, TypesT, Cost2),
     Cost #= Cost1 + Cost2.
 
-calc_bedrooms_cost([_], 0).
-calc_bedrooms_cost([BedroomH | BedroomT], Cost):-
-    BedroomT = [BedroomH1 | _],
-    dist(BedroomH, BedroomH1, Cost1),
-    calc_bedrooms_cost(BedroomT, Cost2),
-    Cost #= Cost1 + Cost2.
+calculateApartmentBedroomCost([],[],0).
+calculateApartmentBedroomCost([_],[_],0).
+calculateApartmentBedroomCost([RoomH1,RoomH2|RoomT],[TypeH1,TypeH2|TypeT],Cost):-
+    dist(RoomH1, RoomH2, Distance),
+    TypeH1#=0 #/\ TypeH2#=0 #<==> CostH#=Distance,
+    TypeH1#\=0 #\/ TypeH2#\=0 #<==> CostH#=0,
+    calculateApartmentBedroomCost([RoomH2|RoomT],[TypeH2|TypeT],RestCostH2),
+    calculateApartmentBedroomCost([RoomH1|RoomT],[TypeH1|TypeT],RestCostH1),
+    Cost #= CostH+RestCostH1+RestCostH2.
+
+
 
 % bathrooms should be accessible from any room *especially* the living room
 main_bathroom([], [], 0).

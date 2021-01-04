@@ -35,7 +35,7 @@ Room types:
 **********************************************************************
 **********************************************************************/
 	
-input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, Types, OuterHallways, Elevator,
+input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, Types, OuterHallways, Elevator,Ducts,
 	[GlobalLandscapeViewConstraint, GlobalElevatorDistanceConstraint, GlobalGoldenRatio]):-
 
 	statistics(walltime, [_ | [_]]),
@@ -70,20 +70,27 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 
 	% elevator
 	create_elevator(FloorWidth, FloorHeight, OuterHallways, Elevator, ElevatorCoord),
-	% Elevator = r(_,ElevatorWidth,_,ElevatorHeight),
-	% ElevatorWidth#=<FloorWidth div 4, ElevatorHeight#=< FloorHeight div 4,
+
+	%ducts 
+	create_ducts(FloorWidth, FloorHeight, Apartments,Types, Ducts, DuctsCoord),
+	append(DuctsCoord,DuctsCoords),	
+
+	
 
 	% no overlap constraint
 	append(Apartments, Rooms),
+	% append(Rooms,Ducts,Inside),
 	append(OuterHallways, [Elevator], Outside),
 	append(Rooms, Outside, Floor),
+	% append(Inside,Outside,Floor),
 	disjoint2(Floor),
 	
 	% Utility of Apartments and Hallways
 	apts_util(Apartments, ApartmentsArea),
 	calc_util(OuterHallways, HallsArea),
 	calc_util([Elevator], ElevatorArea),
-	TotalArea #= ApartmentsArea + HallsArea + ElevatorArea,
+	calc_util(Ducts,DuctsArea),
+	TotalArea #= ApartmentsArea + HallsArea + ElevatorArea + DuctsArea,
 
 	/****************** Soft Constraints ******************/
 	sun_exposed(FloorWidth, FloorHeight, Apartments, CostSunExposed),
@@ -108,12 +115,14 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 	goldenRatio(OuterHallways, NumHallwaysGoldenRatio),
 	NumHallwaysGoldenRatio #= NumHallways #<==> HallwaysGoldenRatio,
 	goldenRatio([Elevator], ElevatorGoldenRatio),
+	goldenRatio(Ducts,DuctGoldenRatio),
+	DuctGoldenRatio #= TotalNumApts #<==> GlobalDuctGoldenRatio,
 	
-	
-	ApartmentGoldenRatio+HallwaysGoldenRatio+ElevatorGoldenRatio #= 3 #<==> GlobalGoldenRatio,
+	ApartmentGoldenRatio+HallwaysGoldenRatio+ElevatorGoldenRatio+GlobalDuctGoldenRatio #= 4 #<==> GlobalGoldenRatio,
 
 	% Labeling
-	append(Coords, ElevatorCoord, Label),
+	append(Coords, ElevatorCoord, Label1),
+	append(DuctsCoords,Label1,Label),
 	print("sun: "), print(CostSunExposed), nl,
 	print("bedrooms: "), print(CostBedrooms), nl,
 	print("bathrooms: "), print(CostBathrooms), nl,

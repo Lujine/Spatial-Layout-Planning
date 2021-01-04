@@ -89,3 +89,15 @@ create_elevator(FloorWidth, FloorHeight, OuterHallways, Elevator, ElevatorCoord)
 	create_rect(FloorWidth, FloorHeight, Elevator, ElevatorCoord),
 	roomToHallwayConnectivity2(Elevator, OuterHallways, Count),
 	Count #> 0.
+
+create_ducts(_, _, [], [], [], []).
+create_ducts(FloorWidth, FloorHeight, [AptH|AptT], [TypeH|TypeT], [DH|DT], [CoH|CoT]):-
+	create_rect(FloorWidth, FloorHeight, DH, CoH),
+	ductToKitchenBathroomConnectivity(DH,AptH,TypeH),
+	create_ducts(FloorWidth, FloorHeight, AptT, TypeT, DT, CoT).
+
+ductToKitchenBathroomConnectivity(_,[],[]).
+ductToKitchenBathroomConnectivity(DH,[RoomH|RoomT],[TypeH|TypeT]):-
+	adjacent(RoomH, DH, Adj),
+	% (TypeH#=3 #\/ TypeH#=4 #\/ TypeH#=1) #<==> Adj,
+	ductToKitchenBathroomConnectivity(DH,RoomT,TypeT).

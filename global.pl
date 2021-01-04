@@ -31,7 +31,8 @@ globalElevatorDistance([Ah|AT],Elevator,[DistanceH|DistanceT]):-
     AvgX #= SumX div N,
     AvgY #= SumY div N,
 
-    DistanceH #= (abs(AvgX-MidPointElevatorX)) + (abs(AvgY-MidPointElevatorY)), %manhattan distance
+    %manhattan distance
+    DistanceH #= (abs(AvgX-MidPointElevatorX)) + (abs(AvgY-MidPointElevatorY)), 
     globalElevatorDistance(AT,Elevator,DistanceT).
 
     
@@ -55,13 +56,10 @@ allDistancesEqual([Dh1,Dh2|Dt],GlobalElevatorDistanceConstraint):-
     allDistancesEqual([Dh2|Dt],RestFlag),
     GlobalElevatorDistanceConstraint#= HeadFlag+RestFlag.
 
-
-
 /****************************Symmetry*********************************
 Symmetry Constraints over floor or over same type apartments.
 ***********************************************************************/
 symmetry([]).
-
 
 /****************************globalgoldenRatio*********************************
 Aim to allocate spaces with ratios following the divine proportion
@@ -94,4 +92,3 @@ goldenRatio([RectH|RectT],GlobalGolden):-
     
     goldenRatio(RectT,GoldenRest),
     GlobalGolden #= GoldenRect + GoldenRest.
-

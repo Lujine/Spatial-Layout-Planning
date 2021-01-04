@@ -15,10 +15,6 @@ Apartment Type:
 		MinRoomSize is a list of the minimum size for each room
 		Widths is an optional list of the width of each room
 		Heights is an optional list of the height of each room
-		
-Specific retangles:
-	apt(UpperLeftCornerX, Width, UpperLeftCornerY, Height)
-	hall(UpperLeftCornerX, Width, UpperLeftCornerY, Height)
 
 Room types:
 0 Bedroom
@@ -38,6 +34,7 @@ Room types:
 input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, Types, OuterHallways, Elevator,Ducts,
 	[GlobalLandscapeViewConstraint, GlobalElevatorDistanceConstraint, GlobalGoldenRatio]):-
 
+	print("Starting To Constrain!"), nl,
 	statistics(walltime, [_ | [_]]),
 
 	/****************** Hard Constraints ******************/
@@ -74,8 +71,6 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 	%ducts 
 	create_ducts(FloorWidth, FloorHeight, Apartments,Types, Ducts, DuctsCoord),
 	append(DuctsCoord,DuctsCoords),	
-
-	
 
 	% no overlap constraint
 	append(Apartments, Rooms),
@@ -123,9 +118,6 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 	% Labeling
 	append(Coords, ElevatorCoord, Label1),
 	append(DuctsCoords,Label1,Label),
-	print("sun: "), print(CostSunExposed), nl,
-	print("bedrooms: "), print(CostBedrooms), nl,
-	print("bathrooms: "), print(CostBathrooms), nl,
 
 	print("Starting Labeling!"), nl,
 	% labeling([min(CostSunExposed)], Label),
@@ -174,7 +166,6 @@ createApts(FloorWidth, FloorHeight, AptType, NumApts,
 	% add ducts
 	% add_ducts(AptRoomsH, Types, Ducts);
 
-	
 	Counter #= NumApts - 1,
 	createApts(FloorWidth, FloorHeight, AptType, Counter, AptT, TypesAptT, CoorT, InHallwaysT, NumHallwaysT, OutHallT),
 	append(AptCoords, CoorT, Coords).
@@ -204,50 +195,6 @@ createRoom(FloorWidth, FloorHeight, Type, MinRoomSize,MinWidthH,MinHeightH, Room
 	(Type #= 7) #<==> ShouldBeSunRoom,
 	sun_room(FloorWidth, FloorHeight, Coord, IsSunRoom),
 	ShouldBeSunRoom #==> IsSunRoom.
-
-/**********************************************************************
- * Hallway Creation
- **********************************************************************/
-
-% creates a variable number of hallways using the helper createOuterHalls	
-% addOuterHalls(FloorWidth, FloorHeight, NumApts, Hallways, NumHallways, Coords):-
-% 	length(Hallways, NumHallways),
-% 	Max #= (NumApts div 2),
-% 	NumHallways in 1..Max,
-% 	createOuterHalls(FloorWidth, FloorHeight, Hallways, Coords).
-
-% createOuterHalls(_, _, [], []).
-% createOuterHalls(FloorWidth, FloorHeight, [HallH | HallT], Coords):-
-% 	create_rect(FloorWidth, FloorHeight, HallH, CoordH),
-% 	createOuterHalls(FloorWidth, FloorHeight, HallT, CoordT),
-% 	append(CoordH, CoordT, Coords).
-
-% % makes sure all apartments are connected through hallways
-% % takes in list of apartments, and list of hallways
-% checkConnectivity([], _).
-% checkConnectivity([AptH | AptT], Hallways):-
-% 	% print("Apartments as Hallways"), print([AptH | AptT]),
-% 	appartmentToHallwayConnectivity(AptH, Hallways, ConnectedRooms),
-% 	ConnectedRooms #>=1,
-% 	checkConnectivity(AptT, Hallways).
-
-% % counts the number of rooms inside an apartment that are connected to hallways
-% % takes in list of rooms, and list of hallways, returns a counter
-% appartmentToHallwayConnectivity([], _, 0).
-% appartmentToHallwayConnectivity([RoomH | RoomT], Hallways, Count):-
-% 	% print("Hallways 1 apt"), print([RoomH | RoomT]), nl,
-% 	roomToHallwayConnectivity(RoomH, Hallways, Count1),
-% 	appartmentToHallwayConnectivity(RoomT, Hallways, Count2),
-% 	Count #= Count1 + Count2.
-
-% % counts the number of hallways 1 room is connected to
-% % takes in a rooms, and a list of hallways, returns a counter 
-% roomToHallwayConnectivity(_, [], 0).
-% roomToHallwayConnectivity(Room, [HallH | HallT], Count):-
-% 	% print("Hall"), print(Room), nl,
-% 	adjacent(Room, HallH, Count1),
-% 	roomToHallwayConnectivity(Room , HallT, Count2),
-% 	Count #= Count1 + Count2.
 
 /**********************************************************************
  * apts_util

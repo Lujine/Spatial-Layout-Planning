@@ -39,8 +39,6 @@ calculateApartmentBedroomCost([RoomH1,RoomH2|RoomT],[TypeH1,TypeH2|TypeT],Cost):
     calculateApartmentBedroomCost([RoomH1|RoomT],[TypeH1|TypeT],RestCostH1),
     Cost #= CostH+RestCostH1+RestCostH2.
 
-
-
 % bathrooms should be accessible from any room *especially* the living room
 main_bathroom([], [], 0).
 main_bathroom([AptH | AptT], [TypesH | TypesT], Cost):-

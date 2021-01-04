@@ -1,5 +1,8 @@
 :-use_module(library(clpfd)).
 
+/**********************************************************************
+ * Adjacency Constraints
+ **********************************************************************/
 sun_room(FloorWidth, FloorHeight, Coord, IsSunRoom):-
 	Coord = [X, W, Y, H],
 	X #= 0 #<==> IsAtLeft,
@@ -35,6 +38,9 @@ adjacentRooms([RoomH1 | RoomT], [TypeH | TypeT]):-
 
 	adjacentRooms(RoomT, TypeT).
 
+/**********************************************************************
+ * Hallway Creation
+ **********************************************************************/
 addInnerHalls(FloorWidth, FloorHeight, Rooms, NumRooms, Hallways, Types, NumHallways, Coords):-
 	length(Hallways, NumHallways),
 	Max #= (NumRooms div 2),
@@ -53,7 +59,6 @@ createInnerHalls(FloorWidth, FloorHeight, [HallH | HallT], [TypeH | TypeT], Coor
 room_hall_connect([], _).
 room_hall_connect([RoomH | RoomT], Halls):-
 	roomToHallwayConnectivity1(RoomH, Halls, Count),
-	% print(RoomH), print(" count "), print(Count), nl,
 	Count #> 0,
 	room_hall_connect(RoomT, Halls).
 
@@ -61,17 +66,6 @@ addOuterHalls(FloorWidth, FloorHeight, InHallways, OutHall, OutHallCoordH):-
 	create_rect(FloorWidth, FloorHeight, OutHall, OutHallCoordH),
 	roomToHallwayConnectivity2(OutHall, InHallways, Count),
 	Count #>= 1.
-
-% add_ducts(FloorWidth, FloorHeight, Rooms, Types, Ducts, TypesDuct):-
-% 	findall(Room, (nth1(N, Rooms, Room), nth1(N, Types, Type), Type #= 1), Kitchens),
-% 	findall(Room, (nth1(N, Rooms, Room), nth1(N, Types, Type), Type #= 3), Bathrooms),
-% 	findall(Room, (nth1(N, Rooms, Room), nth1(N, Types, Type), Type #= 4), MinorBathrooms),
-% 	append(Bathrooms, MinorBathrooms, Bathrooms),
-% 	append(Bathrooms, Kitchens, NeedDucts),
-% 	put_ducts(FloorWidth, FloorHeight, NeedDucts, Ducts, TypesDuct).
-
-% put_ducts(FloorWidth, FloorHeight, NeedDucts, Ducts, TypesDuct):-
-% 	true.
 
 roomToHallwayConnectivity1(_,[],0).
 roomToHallwayConnectivity1(Room, [HallH | HallT], Count):-
@@ -85,6 +79,9 @@ roomToHallwayConnectivity2(Hall, [RoomH | RoomT], Count):-
 	roomToHallwayConnectivity1(Hall, RoomT, Count2),
 	Count #= Count1 + Count2.
 
+/**********************************************************************
+ * Elevator Creation
+ **********************************************************************/
 create_elevator(FloorWidth, FloorHeight, OuterHallways, Elevator, ElevatorCoord):-
 	create_rect(FloorWidth, FloorHeight, Elevator, ElevatorCoord),
 	roomToHallwayConnectivity2(Elevator, OuterHallways, Count),
@@ -96,8 +93,10 @@ create_ducts(FloorWidth, FloorHeight, [AptH|AptT], [TypeH|TypeT], [DH|DT], [CoH|
 	ductToKitchenBathroomConnectivity(DH,AptH,TypeH),
 	create_ducts(FloorWidth, FloorHeight, AptT, TypeT, DT, CoT).
 
+/**********************************************************************
+ * Ducts Creation
+ **********************************************************************/
 ductToKitchenBathroomConnectivity(_,[],[]).
 ductToKitchenBathroomConnectivity(DH,[RoomH|RoomT],[TypeH|TypeT]):-
 	adjacent(RoomH, DH, Adj),
-	% (TypeH#=3 #\/ TypeH#=4 #\/ TypeH#=1) #<==> Adj,
 	ductToKitchenBathroomConnectivity(DH,RoomT,TypeT).

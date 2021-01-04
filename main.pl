@@ -55,46 +55,33 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 		AptTypes, NumApts, 
 		ApartmentsList, TypesList,
 		AptCoordList, XsList, WsList, YsList, HsList,
-		InnerHallwaysList, NumInnerHallways
+		InnerHallwaysList, NumInnerHallways,
+		OuterHallwaysList
 		),
 
 	append(InnerHallwaysList, InnerHallways),
 	append(TypesList, Types),
-	% print(InnerHallways),nl,
+	append(OuterHallwaysList, OuterHallways),
 
 	append(ApartmentsList, Apartments),
 	append(AptCoordList, Coords),
 
-	% append(XsList, Xs),
-	% append(WsList, Ws),
-	% append(YsList, Ys),
-	% append(HsList, Hs),
+	checkAdjacency(OuterHallways),
 
-	% append(Xs, Ws, HorizCoord),
-	% append(Ys, Hs, VertCoord),
-	% append(HorizCoord, VertCoord, CoordsOrg),
-
-	addOuterHalls(FloorWidth, FloorHeight, TotalNumApts, OuterHallways, NumHallways, OuterHallwaysCoords),
-	create_rect(FloorWidth, FloorHeight, Elevator, ElevatorCoord),
-
-	% append([Elevator],OuterHallways,ElevatorAndHallways),
-	% \+disjoint2(ElevatorAndHallways),
-
-	% checkConnectivity(InnerHallways, OuterHallways),
-	% checkAdjacency(OuterHallways),
+	% elevator
+	create_elevator(FloorWidth, FloorHeight, OuterHallways, Elevator, ElevatorCoord),
 
 	% no overlap constraint
-	% TODO fix this
 	append(Apartments, Rooms),
-	append(Rooms, OuterHallways, Floor),
+	append(OuterHallways, [Elevator], Outside),
+	append(Rooms, Outside, Floor),
 	disjoint2(Floor),
-	append(Rooms,[Elevator],RoomsAndElevator),
-	disjoint2(RoomsAndElevator),
 	
 	% Utility of Apartments and Hallways
 	apts_util(Apartments, ApartmentsArea),
 	calc_util(OuterHallways, HallsArea),
-	TotalArea #= ApartmentsArea + HallsArea,
+	calc_util([Elevator], ElevatorArea),
+	TotalArea #= ApartmentsArea + HallsArea + ElevatorArea,
 
 	/****************** Soft Constraints ******************/
 	sun_exposed(FloorWidth, FloorHeight, Apartments, CostSunExposed),
@@ -122,13 +109,12 @@ input(FloorWidth, FloorHeight, Landscapes, Open, AptTypes, NumApts, Apartments, 
 	ApartmentGoldenRatio+HallwaysGoldenRatio #= 2 #<==> GlobalGoldenRatio,
 
 	% Labeling
-	append(OuterHallwaysCoords, ElevatorCoord, OuterHallsAndElevatorCoords),
-	append(Coords, OuterHallsAndElevatorCoords, Label),
+	append(Coords, ElevatorCoord, Label),
 	print("sun: "), print(CostSunExposed), nl,
 	print("bedrooms: "), print(CostBedrooms), nl,
 	print("bathrooms: "), print(CostBathrooms), nl,
-	% append(Coords, OuterHallwaysCoords, Label),
 
+	print("Starting Labeling!"), nl,
 	% labeling([min(CostSunExposed)], Label),
 	labeling([], Label),
 	print("sun: "), print(CostSunExposed), nl,
@@ -144,11 +130,12 @@ Appartment Creation
 ***********************************************************************/
 % creates all apartments of some type "AptType"
 % this apartment type exists "NumApts" times on the floor
-createApts(_, _, _, 0, [], [], [], [], [], [], [], [], []).	
+createApts(_, _, _, 0, [], [], [], [], [], [], [], [], [], []).	
 createApts(FloorWidth, FloorHeight, AptType, NumApts, 
 			[AptH | AptT], [TypesAptH | TypesAptT],
 			Coords, Xs, Ws, Ys, Hs, 
-			[HallwaysH | HallwaysT], [NumHallwaysH | NumHallwaysT]
+			[InHallwaysH | InHallwaysT], [NumHallwaysH | NumHallwaysT],
+			[OutHallH | OutHallT]
 			):-
 
 	NumApts #> 0,
@@ -160,17 +147,24 @@ createApts(FloorWidth, FloorHeight, AptType, NumApts,
 	adjacentRooms(AptRoomsH, Types),
 
 	% add hallways
-	addHalls(FloorWidth, FloorHeight, AptRoomsH, NumRooms, HallwaysH, TypesHallH, NumHallwaysH, HallCoordH),
+	addInnerHalls(FloorWidth, FloorHeight, AptRoomsH, NumRooms, InHallwaysH, TypesHallH, NumHallwaysH, HallCoordH),
+
+	append(AptRoomsH, InHallwaysH, AptH),
 	append(Types, TypesHallH, TypesAptH),
-	append(CoorH, HallCoordH, AptCoords),
-	append(AptRoomsH, HallwaysH, AptH),
+
+	% add outer hallway
+	addOuterHalls(FloorWidth, FloorHeight, InHallwaysH, OutHallH, OutHallCoordH),
+
+	append(CoorH, HallCoordH, InCoords),
+	append(InCoords, OutHallCoordH, AptCoords),
 	% add ducts
 	% add_ducts(AptRoomsH, Types, Ducts);
+
 	
 	Counter #= NumApts - 1,
-	createApts(FloorWidth, FloorHeight, AptType, Counter, AptT, TypesAptT, CoorT, XsT, WsT, YsT, HsT, HallwaysT, NumHallwaysT),
+	createApts(FloorWidth, FloorHeight, AptType, Counter, AptT, TypesAptT, CoorT, XsT, WsT, YsT, HsT, InHallwaysT, NumHallwaysT, OutHallT),
 	append(AptCoords, CoorT, Coords),
-	% append(HallwaysH, HallwaysT, Hallways),
+	% append(HallwaysH, InHallwaysT, Hallways),
 	% print("Apt num: "), print(NumApts), print(" Coords: "), print(Coords), nl,
 
 	append(XsH, XsT, Xs),
@@ -209,44 +203,44 @@ createRoom(FloorWidth, FloorHeight, Type, MinRoomSize, Room, Coord, X, W, Y, H):
  **********************************************************************/
 
 % creates a variable number of hallways using the helper createOuterHalls	
-addOuterHalls(FloorWidth, FloorHeight, NumApts, Hallways, NumHallways, Coords):-
-	length(Hallways, NumHallways),
-	Max #= (NumApts div 2),
-	NumHallways in 1..Max,
-	createOuterHalls(FloorWidth, FloorHeight, Hallways, Coords).
+% addOuterHalls(FloorWidth, FloorHeight, NumApts, Hallways, NumHallways, Coords):-
+% 	length(Hallways, NumHallways),
+% 	Max #= (NumApts div 2),
+% 	NumHallways in 1..Max,
+% 	createOuterHalls(FloorWidth, FloorHeight, Hallways, Coords).
 
-createOuterHalls(_, _, [], []).
-createOuterHalls(FloorWidth, FloorHeight, [HallH | HallT], Coords):-
-	create_rect(FloorWidth, FloorHeight, HallH, CoordH),
-	createOuterHalls(FloorWidth, FloorHeight, HallT, CoordT),
-	append(CoordH, CoordT, Coords).
+% createOuterHalls(_, _, [], []).
+% createOuterHalls(FloorWidth, FloorHeight, [HallH | HallT], Coords):-
+% 	create_rect(FloorWidth, FloorHeight, HallH, CoordH),
+% 	createOuterHalls(FloorWidth, FloorHeight, HallT, CoordT),
+% 	append(CoordH, CoordT, Coords).
 
-% makes sure all apartments are connected through hallways
-% takes in list of apartments, and list of hallways
-checkConnectivity([], _).
-checkConnectivity([AptH | AptT], Hallways):-
-	% print("Apartments as Hallways"), print([AptH | AptT]),
-	appartmentToHallwayConnectivity(AptH, Hallways, ConnectedRooms),
-	ConnectedRooms #>=1,
-	checkConnectivity(AptT, Hallways).
+% % makes sure all apartments are connected through hallways
+% % takes in list of apartments, and list of hallways
+% checkConnectivity([], _).
+% checkConnectivity([AptH | AptT], Hallways):-
+% 	% print("Apartments as Hallways"), print([AptH | AptT]),
+% 	appartmentToHallwayConnectivity(AptH, Hallways, ConnectedRooms),
+% 	ConnectedRooms #>=1,
+% 	checkConnectivity(AptT, Hallways).
 
-% counts the number of rooms inside an apartment that are connected to hallways
-% takes in list of rooms, and list of hallways, returns a counter
-appartmentToHallwayConnectivity([], _, 0).
-appartmentToHallwayConnectivity([RoomH | RoomT], Hallways, Count):-
-	% print("Hallways 1 apt"), print([RoomH | RoomT]), nl,
-	roomToHallwayConnectivity(RoomH, Hallways, Count1),
-	appartmentToHallwayConnectivity(RoomT, Hallways, Count2),
-	Count #= Count1 + Count2.
+% % counts the number of rooms inside an apartment that are connected to hallways
+% % takes in list of rooms, and list of hallways, returns a counter
+% appartmentToHallwayConnectivity([], _, 0).
+% appartmentToHallwayConnectivity([RoomH | RoomT], Hallways, Count):-
+% 	% print("Hallways 1 apt"), print([RoomH | RoomT]), nl,
+% 	roomToHallwayConnectivity(RoomH, Hallways, Count1),
+% 	appartmentToHallwayConnectivity(RoomT, Hallways, Count2),
+% 	Count #= Count1 + Count2.
 
-% counts the number of hallways 1 room is connected to
-% takes in a rooms, and a list of hallways, returns a counter 
-roomToHallwayConnectivity(_, [], 0).
-roomToHallwayConnectivity(Room, [HallH | HallT], Count):-
-	% print("Hall"), print(Room), nl,
-	adjacent(Room, HallH, Count1),
-	roomToHallwayConnectivity(Room , HallT, Count2),
-	Count #= Count1 + Count2.
+% % counts the number of hallways 1 room is connected to
+% % takes in a rooms, and a list of hallways, returns a counter 
+% roomToHallwayConnectivity(_, [], 0).
+% roomToHallwayConnectivity(Room, [HallH | HallT], Count):-
+% 	% print("Hall"), print(Room), nl,
+% 	adjacent(Room, HallH, Count1),
+% 	roomToHallwayConnectivity(Room , HallT, Count2),
+% 	Count #= Count1 + Count2.
 
 /**********************************************************************
  * apts_util

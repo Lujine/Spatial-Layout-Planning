@@ -1,7 +1,7 @@
 :-include('main.pl').
 :-include('plot.pl').
 
-test(Apartments, Types, OuterHallways,Elevator,GlobalConstraints):-
+test(Apartments, Types, OuterHallways, Elevator, GlobalConstraints):-
 	Width = 38,
 	Height = 38,
 
@@ -13,4 +13,5 @@ test(Apartments, Types, OuterHallways,Elevator,GlobalConstraints):-
 	Open = [0,1,0,0],
 	input(Width, Height, Landscapes, Open, [apt_type(NumRooms, RoomTypes, RoomSizes, _, _)], [2], Apartments, Types, OuterHallways,Elevator,GlobalConstraints),
 	plot(Apartments, P),
-	plot_rooms(OuterHallways, P).
+	plot_rooms(OuterHallways, P),
+	plot_rooms([Elevator], P).

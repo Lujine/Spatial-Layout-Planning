@@ -66,12 +66,12 @@ adjacent(r(X1, W1, Y1, H1), r(X2, W2, Y2, H2), Adj):- % <==== added "Adj" to hav
 /****************************checkAdjacency*********************************
 makes sure rect i is adjacent to rect i+1
 ***********************************************************************/
-checkAdjacency([]).
+% checkAdjacency([]).
 checkAdjacency([_]).
-checkAdjacency([H1,H2|T]):-
-	adjacent(H1,H2,Adj),
-	Adj#=1,
-    checkAdjacency([H2|T]).
+checkAdjacency([H1 ,H2 | T]):-
+	adjacent(H1, H2, Adj),
+	Adj #= 1,
+    checkAdjacency([H2 | T]).
 
 
 % Test cases for adjacent
